@@ -2,3 +2,4 @@ google-cloud-org-policy
 google-cloud-service-usage
 google-cloud-iam
 google-cloud-resource-manager
+google-auth
