@@ -11,14 +11,12 @@ from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 
 
-def restrict_vertex_models(project_id, allowed_models, dry_run=True):
-    """
-    Scans Vertex AI quotas.
+def restrict_vertex_models(project_id, allowed_models, dry_run=True) -> None:
+    """Scans Vertex AI quotas.
     1. Identifies quotas with 'base_model' dimensions.
     2. Skips if an override already exists (preserves manual settings).
     3. If model is NOT in allowed_models, sets limit to 0 (forcing safety checks).
     """
-
     # 1. Authenticate
     try:
         credentials, _ = default()
@@ -115,19 +113,13 @@ def restrict_vertex_models(project_id, allowed_models, dry_run=True):
         print(f"\nUnexpected Error: {e}")
 
 
-def has_existing_override(target_dims, existing_overrides):
-    """
-    Checks if the target dimensions exactly match any existing override.
-    """
-    for ov in existing_overrides:
-        if ov.get("dimensions") == target_dims:
-            return True
-    return False
+def has_existing_override(target_dims, existing_overrides) -> bool:
+    """Checks if the target dimensions exactly match any existing override."""
+    return any(ov.get("dimensions") == target_dims for ov in existing_overrides)
 
 
-def create_zero_override(service, limit_name, dimensions):
-    """
-    Creates a new Consumer Override to set the limit to 0.
+def create_zero_override(service, limit_name, dimensions) -> None:
+    """Creates a new Consumer Override to set the limit to 0.
     Includes force=True to bypass "unsafe reduction" checks.
     """
     override_body = {"overrideValue": "0", "dimensions": dimensions}

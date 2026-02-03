@@ -12,7 +12,7 @@ from google.cloud import (
 from google.iam.v1 import iam_policy_pb2, policy_pb2
 
 
-def enable_apis(project_id, apis):
+def enable_apis(project_id, apis) -> None:
     print(f"Enabling APIs: {', '.join(apis)}...")
     client = service_usage_v1.ServiceUsageClient()
     for api in apis:
@@ -49,7 +49,7 @@ def update_org_policy_boolean(
     print(f"Updated {constraint}.")
 
 
-def update_org_policy_list_allow_all(project_id: str, constraint: str):
+def update_org_policy_list_allow_all(project_id: str, constraint: str) -> None:
     print(f"Updating Org Policy: {constraint} to allow all...")
     client = orgpolicy_v2.OrgPolicyClient()
     parent = f"projects/{project_id}"
@@ -157,7 +157,7 @@ def create_sa_key(email: str, output_file: str = "credentials.json") -> None:
     print(f"Key saved to {output_file}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Setup GCP Project for DLAI Lab")
     parser.add_argument("--project_id", required=True, help="Google Cloud Project ID")
     args = parser.parse_args()
