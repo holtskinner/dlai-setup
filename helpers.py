@@ -40,6 +40,9 @@ def authenticate(
     source_credentials.refresh(request)
 
     # 5. Create Impersonated Credentials (The 2-hour token)
+    # This allows the service account to "impersonate" itself to get a 
+    # fresh token with a longer lifetime (up to 12 hours, set to 2 here).
+    # This is often used in notebook environments to avoid re-authenticating.
     target_principal = source_credentials.service_account_email
 
     credentials = impersonated_credentials.Credentials(

@@ -21,24 +21,52 @@ pip install -r requirements.txt
 
 ## Usage
 
+### 1. Setup Google Cloud Project
+
 Run the script by providing your Project ID:
 
 ```bash
 python setup_gcp.py --project_id YOUR_PROJECT_ID
 ```
 
-## What the script does:
+This will create a `credentials.json` file in your current directory. **Do not commit this file to version control.**
+
+### 2. Configure Environment
+
+Copy the example environment file and update it with your project details:
+
+```bash
+cp example.env .env
+```
+
+Edit `.env` and set `GOOGLE_CLOUD_PROJECT` to your Project ID.
+
+### 3. (Optional) Restrict Vertex AI Models
+
+To restrict which models can be used (to prevent accidental usage of expensive models), use the restriction script:
+
+```bash
+python restrict_vertex_ai_models.py YOUR_PROJECT_ID --allow gemini-3-flash-preview,gemini-3.1-pro-preview
+```
+
+Use `--no-dry-run` to actually apply the changes (sets other model quotas to 0).
+
+## What the setup script does:
 
 1.  **Enables APIs**:
     - `iam.googleapis.com`
     - `aiplatform.googleapis.com`
     - `cloudresourcemanager.googleapis.com`
     - `serviceusage.googleapis.com`
-2.  **Updates Org Policies**:
+2.  **Updates Org Policies** (if the project is in an organization):
     - Disables `iam.disableServiceAccountKeyCreation` (allows key creation).
     - Disables `iam-managed.disableServiceAccountKeyCreation` (allows key creation).
     - Allows all for `iam.allowServiceAccountCredentialLifetimeExtension`.
-3.  **Creates a Custom Role**: `dlai_lab_runner` with minimal permissions for Vertex AI and IAM.
+3.  **Creates a Custom Role**: `dlai_lab_runner` with permissions for Vertex AI and IAM impersonation.
 4.  **Creates a Service Account**: `dlai-lab-sa`.
 5.  **Assigns the Custom Role** to the service account.
-6.  **Downloads Service Account Key**: Saves as `credentials.json` in the current directory.
+6.  **Downloads Service Account Key**: Saves as `credentials.json`.
+
+## Helper Utility
+
+The `helpers.py` file provides an `authenticate()` function that can be used in your notebooks to automatically load credentials from `credentials.json` or environment variables and set up the Google Cloud environment.

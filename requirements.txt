@@ -3,3 +3,5 @@ google-cloud-service-usage
 google-cloud-iam
 google-cloud-resource-manager
 google-auth
+google-api-python-client
+python-dotenv

@@ -157,12 +157,36 @@ def create_sa_key(email: str, output_file: str = "credentials.json") -> None:
     print(f"Key saved to {output_file}")
 
 
+def check_project(project_id: str) -> bool:
+    print(f"Checking project: {project_id}...")
+    client = resourcemanager_v3.ProjectsClient()
+    try:
+        project = client.get_project(name=f"projects/{project_id}")
+        print(f"Project {project_id} found.")
+        # Check if project is in an organization
+        if not project.parent.startswith("organizations/"):
+            print(
+                "Warning: Project is not in an Organization. Org Policies will be skipped."
+            )
+            return False
+        return True
+    except exceptions.PermissionDenied:
+        print(
+            f"Error: Permission denied for project {project_id}. Check your authentication."
+        )
+        exit(1)
+    except exceptions.NotFound:
+        print(f"Error: Project {project_id} not found.")
+        exit(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Setup GCP Project for DLAI Lab")
     parser.add_argument("--project_id", required=True, help="Google Cloud Project ID")
     args = parser.parse_args()
 
     project_id = args.project_id
+    is_in_org = check_project(project_id)
 
     # 1. Enable APIs
     apis_to_enable = [
@@ -173,25 +197,28 @@ def main() -> None:
     ]
     enable_apis(project_id, apis_to_enable)
 
-    try:
-        # 2. Update Org Policies
-        # Allow Service Account Key Creation
-        update_org_policy_boolean(
-            project_id, "iam.disableServiceAccountKeyCreation", enforce=False
-        )
-        update_org_policy_boolean(
-            project_id, "iam-managed.disableServiceAccountKeyCreation", enforce=False
-        )
+    if is_in_org:
+        try:
+            # 2. Update Org Policies
+            # Allow Service Account Key Creation
+            update_org_policy_boolean(
+                project_id, "iam.disableServiceAccountKeyCreation", enforce=False
+            )
+            update_org_policy_boolean(
+                project_id,
+                "iam-managed.disableServiceAccountKeyCreation",
+                enforce=False,
+            )
 
-        # Allow Extend credential lifetime
-        update_org_policy_list_allow_all(
-            project_id, "iam.allowServiceAccountCredentialLifetimeExtension"
-        )
-    except Exception as e:
-        print(f"Warning: Could not update Org Policies: {e}")
-        print(
-            "Ensure you have 'roles/orgpolicy.policyAdmin' and that the project is in an Organization."
-        )
+            # Allow Extend credential lifetime
+            update_org_policy_list_allow_all(
+                project_id, "iam.allowServiceAccountCredentialLifetimeExtension"
+            )
+        except Exception as e:
+            print(f"Warning: Could not update Org Policies: {e}")
+            print("Ensure you have 'roles/orgpolicy.policyAdmin'.")
+    else:
+        print("Skipping Org Policies as project is not in an organization.")
 
     # 3. Create Custom Role
     role_id = "dlai_lab_runner"
@@ -199,6 +226,7 @@ def main() -> None:
     permissions = [
         "aiplatform.endpoints.get",
         "aiplatform.endpoints.predict",
+        "aiplatform.models.get",
         "iam.serviceAccounts.get",
         "iam.serviceAccounts.getAccessToken",
         "iam.serviceAccounts.getOpenIdToken",
