@@ -49,18 +49,32 @@ def update_org_policy_boolean(
     print(f"Updated {constraint}.")
 
 
-def update_org_policy_list_allow_all(project_id: str, constraint: str) -> None:
-    print(f"Updating Org Policy: {constraint} to allow all...")
+def update_org_policy_list(
+    project_id: str, constraint: str, allowed_values: list[str] | None = None
+) -> None:
+    print(f"Updating Org Policy: {constraint}...")
     client = orgpolicy_v2.OrgPolicyClient()
     parent = f"projects/{project_id}"
     policy_name = f"{parent}/policies/{constraint}"
 
-    policy = orgpolicy_v2.Policy(
-        name=policy_name,
-        spec=orgpolicy_v2.PolicySpec(
-            rules=[orgpolicy_v2.PolicySpec.PolicyRule(allow_all=True)]
-        ),
-    )
+    if allowed_values is not None:
+        spec = orgpolicy_v2.PolicySpec(
+            rules=[
+                orgpolicy_v2.PolicySpec.PolicyRule(
+                    values=orgpolicy_v2.PolicySpec.PolicyRule.StringValues(
+                        allowed_values=allowed_values
+                    )
+                )
+            ],
+            inherit_from_parent=False,
+        )
+    else:
+        spec = orgpolicy_v2.PolicySpec(
+            rules=[orgpolicy_v2.PolicySpec.PolicyRule(allow_all=True)],
+            inherit_from_parent=False,
+        )
+
+    policy = orgpolicy_v2.Policy(name=policy_name, spec=spec)
 
     try:
         client.create_policy(parent=parent, policy=policy)
@@ -183,6 +197,10 @@ def check_project(project_id: str) -> bool:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Setup GCP Project for DLAI Lab")
     parser.add_argument("--project_id", required=True, help="Google Cloud Project ID")
+    parser.add_argument(
+        "--allowed_models_file",
+        help="Path to a text file containing allowed models (one per line)",
+    )
     args = parser.parse_args()
 
     project_id = args.project_id
@@ -211,9 +229,21 @@ def main() -> None:
             )
 
             # Allow Extend credential lifetime
-            update_org_policy_list_allow_all(
+            update_org_policy_list(
                 project_id, "iam.allowServiceAccountCredentialLifetimeExtension"
             )
+
+            # Restrict Vertex AI Models if requested
+            if args.allowed_models_file:
+                with open(args.allowed_models_file, "r") as f:
+                    allowed_list = [
+                        line.strip() for line in f if line.strip() and not line.startswith("#")
+                    ]
+                
+                if allowed_list:
+                    update_org_policy_list(
+                        project_id, "vertexai.allowedModels", allowed_values=allowed_list
+                    )
         except Exception as e:
             print(f"Warning: Could not update Org Policies: {e}")
             print("Ensure you have 'roles/orgpolicy.policyAdmin'.")

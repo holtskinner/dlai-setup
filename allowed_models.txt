@@ -1,0 +1,8 @@
+# List of allowed Vertex AI models and actions.
+# Format: publishers/[PUBLISHER]/models/[MODEL_ID]:[ACTION]
+# Actions: predict, deploy, tune
+
+# Examples
+# publishers/google/models/gemini-3-flash-preview:predict
+# publishers/anthropic/models/claude-haiku-4-5:predict
+# publishers/google/models/veo-3.1-lite-generate-001

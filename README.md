@@ -23,10 +23,10 @@ pip install -r requirements.txt
 
 ### 1. Setup Google Cloud Project
 
-Run the script by providing your Project ID:
+Run the script by providing your Project ID and (optionally) a file containing allowed models:
 
 ```bash
-python setup_gcp.py --project_id YOUR_PROJECT_ID
+python setup_gcp.py --project_id YOUR_PROJECT_ID --allowed_models_file allowed_models.txt
 ```
 
 This will create a `credentials.json` file in your current directory. **Do not commit this file to version control.**
@@ -41,16 +41,6 @@ cp example.env .env
 
 Edit `.env` and set `GOOGLE_CLOUD_PROJECT` to your Project ID.
 
-### 3. (Optional) Restrict Vertex AI Models
-
-To restrict which models can be used (to prevent accidental usage of expensive models), use the restriction script:
-
-```bash
-python restrict_vertex_ai_models.py YOUR_PROJECT_ID --allow gemini-3-flash-preview,gemini-3.1-pro-preview
-```
-
-Use `--no-dry-run` to actually apply the changes (sets other model quotas to 0).
-
 ## What the setup script does:
 
 1.  **Enables APIs**:
@@ -62,6 +52,8 @@ Use `--no-dry-run` to actually apply the changes (sets other model quotas to 0).
     - Disables `iam.disableServiceAccountKeyCreation` (allows key creation).
     - Disables `iam-managed.disableServiceAccountKeyCreation` (allows key creation).
     - Allows all for `iam.allowServiceAccountCredentialLifetimeExtension`.
+    - (Optional) Restricts Vertex AI models via `vertexai.allowedModels` if the `--allowed_models_file` flag is used. The script will read the list of models from the provided text file.
+
 3.  **Creates a Custom Role**: `dlai_lab_runner` with permissions for Vertex AI and IAM impersonation.
 4.  **Creates a Service Account**: `dlai-lab-sa`.
 5.  **Assigns the Custom Role** to the service account.
